@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
 SEED = 42
-DATA_PATH = "data/features.csv"
+DATA_PATH = "data/embeddings.csv"
 REPORT_PATH = "log/target_model.txt"
 
 if os.path.exists(REPORT_PATH):
@@ -21,10 +21,10 @@ if os.path.exists(REPORT_PATH):
 data = pd.read_csv(DATA_PATH)
 X, y = [], []
 for row in data.values:
-    if os.path.exists(f"data/benign/{row[0]}.adjlist"):
+    if os.path.exists(f"data/dataset/benign/{row[0]}.adjlist"):
         X.append(row[1:])
         y.append(0)
-    if os.path.exists(f"data/malware/{row[0]}.adjlist"):
+    if os.path.exists(f"data/dataset/malware/{row[0]}.adjlist"):
         X.append(row[1:])
         y.append(1)
 
