@@ -1,21 +1,17 @@
 import os
-import json
-import pickle
 import numpy as np
-import pandas as pd
 import networkx as nx
-from joblib import load
 from glob import glob
 from copy import deepcopy
-from Graph2vec import graph2vec
+from Environment import Environment
+from QLearningTable import QLearningTable
 
 
 def update(num_episode, env, RL):
-    avail_action = env.get_avail_action()
-    if not avail_action:
-        return False
+    avail_action = RL.get_all_actions()
 
     for e in range(num_episode):
+        print(f"Episode {e}/{num_episode}")
         step = 0
         state = env.reset()
 
@@ -33,38 +29,42 @@ def update(num_episode, env, RL):
         if done:
             print(state)
             break
-        # print(e, state, done)
     return done
+
+
+def get_mapping(graph, pre):
+    i = 1
+    mapping = {}
+    for node in graph:
+        if "execve" in node:
+            mapping[node] = f"{pre}_0"
+        else:
+            mapping[node] = f"{pre}_{i}"
+            i += 1
+    return mapping
 
 
 def RL(path):
     base = os.path.basename(path)
-    gname = os.path.splitext(base)[0]
+    G_name = os.path.splitext(base)[0]
     G = nx.read_adjlist(path, create_using=nx.DiGraph)
+    G = nx.relabel_nodes(G, mapping=get_mapping(G, "mal"))
 
-    edges = deepcopy(G.edges)
-    for (u, v) in edges:
-        if "execve" in u:
-            G.add_edge(u, "fork")
-            G.add_edge("fork", v)
-            G.remove_edge(u, v)
-
-    beg_path = np.random.choice(glob("data/origin/benign/*.adjlist"))
+    beg_path = np.random.choice(glob("data/dataset/benign/*.adjlist"))
     H = nx.read_adjlist(beg_path, create_using=nx.DiGraph)
+    H = nx.relabel_nodes(H, mapping=get_mapping(H, "beg"))
 
-    mapping = {}
-    for n in H:
-        mapping[n] = f"beg_{n}"
-    H = nx.relabel_nodes(H, mapping=mapping)
+    v = list(G.neighbors("mal_0"))[0]
+    G.add_edge("mal_0", "fork")
+    G.add_edge("fork", v)
+    G.add_edge("fork", "beg_0")
+    G.remove_edge("mal_0", v)
 
-    for (u, v) in H.edges:
+    edges = deepcopy(H.edges)
+    for (u, v) in edges:
         G.add_edge(u, v)
-        if "execve" in u:
-            G.add_edge("fork", u)
-    G = nx.relabel_nodes(G, mapping=dict(zip(G, map(str, range(len(G))))))
-    print(G.edges)
 
-    env = Environment(graph=G, label=1, gname=gname)
+    env = Environment(graph=G, graph_name=G_name)
     RL = QLearningTable(actions=list(H.nodes))
 
     n_eps = 20
@@ -73,7 +73,8 @@ def RL(path):
         print("Attack failed.")
 
 
-PATH = glob("data/origin/malware/*.adjlist")
-for path in PATH:
-    RL(path)
-    exit()
+if __name__ == '__main__':
+    paths = glob("data/dataset/malware/*.adjlist")
+    for path in paths:
+        RL(path)
+        exit()

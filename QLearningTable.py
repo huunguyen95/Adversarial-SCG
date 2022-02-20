@@ -11,11 +11,18 @@ class QLearningTable:
 
         self.q_table = pd.DataFrame(columns=self.actions, dtype=np.float64)
 
+    def get_all_actions(self):
+        return self.actions
+
     def get_q_table(self):
         return self.q_table
 
-    def choose_action(self, state, avail_actions):
+    def choose_action(self, state, all_avail_actions):
         self.check_state_exist(state)
+        avail_actions = []
+        for action in all_avail_actions:
+            if action not in state:
+                avail_actions.append(action)
 
         if np.random.uniform() > self.epsilon:
             state_action = self.q_table.loc[state, avail_actions]
@@ -31,7 +38,6 @@ class QLearningTable:
 
     def learn(self, state, action, reward, next_state):
         self.check_state_exist(next_state)
-        print(self.q_table)
 
         q_predict = self.q_table.loc[state, action]
         q_target = reward + self.gamma * self.q_table.loc[next_state, :].max()

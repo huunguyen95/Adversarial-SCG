@@ -131,10 +131,9 @@ def Graph2vec():
     :param args: Object with the arguments.
     """
     graphs = glob.glob(os.path.join(INPUT_PATH, "*/*.adjlist"))
-    print("\nFeature extraction started.\n")
+
     document_collections = Parallel(n_jobs=WORKERS)(
         delayed(feature_extractor)(g, WL_ITERATIONS) for g in tqdm(graphs))
-    print("\nOptimization started.\n")
 
     model = Doc2Vec(document_collections,
                     vector_size=DIMENSIONS,
