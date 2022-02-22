@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import networkx as nx
+import shutil
 from glob import glob
 from copy import deepcopy
 from Environment import Environment
@@ -15,7 +16,7 @@ def update(num_episode, env, RL):
         step = 0
         state = env.reset()
 
-        while step < 20:
+        while step < 10:
             action = RL.choose_action(str(state), avail_action)
 
             new_state, reward, done = env.step(action, state, step)
@@ -64,17 +65,24 @@ def RL(path):
     for (u, v) in edges:
         G.add_edge(u, v)
 
-    env = Environment(graph=G, graph_name=G_name)
-    RL = QLearningTable(actions=list(H.nodes))
+    actions = []
+    nodes = deepcopy(H.nodes)
+    for node in nodes:
+        if (node, node) not in H.edges:
+            actions.append(node)
+    env = Environment(graph=G)
+    RL = QLearningTable(actions=actions)
 
-    n_eps = 20
+    n_eps = 10
     done = update(n_eps, env, RL)
     if not done:
         print("Attack failed.")
+    else:
+        shutil.copy("data/dataset/AE/AE.adjlist", f"data/AE/AE_{G_name}.adjlist")
 
 
 if __name__ == '__main__':
     paths = glob("data/dataset/malware/*.adjlist")
-    for path in paths:
+    for i, path in enumerate(paths[132:]):
+        print(i, path)
         RL(path)
-        exit()

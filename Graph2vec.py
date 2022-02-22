@@ -13,7 +13,7 @@ from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 INPUT_PATH = "./data/dataset/"
 OUTPUT_PATH = "./data/embeddings.csv"
 DIMENSIONS = 128
-WORKERS = 4
+WORKERS = os.cpu_count()
 EPOCHS = 5
 MIN_COUNT = 5
 WL_ITERATIONS = 2

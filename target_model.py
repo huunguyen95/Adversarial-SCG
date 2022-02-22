@@ -13,13 +13,13 @@ from sklearn.svm import SVC
 
 SEED = 42
 DATA_PATH = "data/embeddings.csv"
-REPORT_PATH = "log/target_model.txt"
+REPORT_PATH = "result/target_model.txt"
 
 if os.path.exists(REPORT_PATH):
     os.remove(REPORT_PATH)
 
 data = pd.read_csv(DATA_PATH)
-X, y = [], []
+X, y, X_new = [], [], []
 for row in data.values:
     if os.path.exists(f"data/dataset/benign/{row[0]}.adjlist"):
         X.append(row[1:])
@@ -27,6 +27,8 @@ for row in data.values:
     if os.path.exists(f"data/dataset/malware/{row[0]}.adjlist"):
         X.append(row[1:])
         y.append(1)
+    if os.path.exists(f"data/dataset/new_malware/{row[0]}.adjlist"):
+        X_new.append(row[1:])
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=.3, random_state=SEED, stratify=y)
@@ -35,6 +37,7 @@ print(len(X_train), len(X_test))
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
+X_new = scaler.transform(X_new)
 dump(scaler, "model/scaler.joblib")
 
 
@@ -61,6 +64,7 @@ for (name, est), hyper in zip(classifiers.items(), hyperparam):
 
     y_prob = clf.predict_proba(X_test)
     y_pred = clf.predict(X_test)
+    y_pred_new = clf.predict(X_new)
 
     dump(clf, f"model/{name}.joblib")
 
@@ -75,4 +79,5 @@ for (name, est), hyper in zip(classifiers.items(), hyperparam):
         f.write(str(cnf_matrix) + '\n\n')
         f.write(f"ROC AUC: {round(AUC, 4)}\n")
         f.write(f"FRP: {round(FPR, 4)}\n")
+        f.write(f"Detect new malwares: {y_pred_new.sum()}/{len(X_new)}\n")
         f.write('-' * 88 + '\n')

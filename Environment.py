@@ -1,16 +1,15 @@
 import networkx as nx
 import pandas as pd
+import time
 from copy import deepcopy
 from joblib import load
-from datetime import datetime
 from Graph2vec import Graph2vec
 
 
 class Environment():
-    def __init__(self, graph, graph_name):
+    def __init__(self, graph):
         self.init_graph = graph
         self.graph = deepcopy(self.init_graph)
-        self.graph_name = graph_name
         self.init_state = dict()
 
         self.scaler = load("model/scaler.joblib")
@@ -23,9 +22,10 @@ class Environment():
     def step(self, action, state, step):
         reward = -1
 
-        dummy = str(datetime.now())
-        self.graph.add_node(dummy)
-        self.graph.add_edge(action, dummy)
+        root = action
+        for _ in range(5):
+            self.graph.add_edge(root, dummy := f"dummy_{time.time()}")
+            root = dummy
 
         nx.write_adjlist(self.graph, "data/dataset/AE/AE.adjlist")
         Graph2vec()
