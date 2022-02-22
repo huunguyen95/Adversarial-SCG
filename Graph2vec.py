@@ -11,7 +11,8 @@ from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 
 INPUT_PATH = "./data/dataset/"
-OUTPUT_PATH = "./data/embeddings.csv"
+# OUTPUT_PATH = "./data/embeddings.csv"
+OUTPUT_PATH = "./data/embeddings_ae.csv"
 DIMENSIONS = 128
 WORKERS = os.cpu_count()
 EPOCHS = 5

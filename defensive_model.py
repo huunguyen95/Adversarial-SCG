@@ -12,14 +12,14 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 
 SEED = 42
-DATA_PATH = "data/embeddings.csv"
-REPORT_PATH = "result/target_model.txt"
+DATA_PATH = "data/embeddings_ae.csv"
+REPORT_PATH = "result/defensive_model.txt"
 
 if os.path.exists(REPORT_PATH):
     os.remove(REPORT_PATH)
 
 data = pd.read_csv(DATA_PATH)
-X, y, X_new = [], [], []
+X, y, X_new, X_ae = [], [], [], []
 for row in data.values:
     if os.path.exists(f"data/dataset/benign/{row[0]}.adjlist"):
         X.append(row[1:])
@@ -29,9 +29,13 @@ for row in data.values:
         y.append(1)
     if os.path.exists(f"data/dataset/new_malware/{row[0]}.adjlist"):
         X_new.append(row[1:])
+    if os.path.exists(f"data/dataset/AEs/{row[0]}.adjlist"):
+        X_ae.append(row[1:])
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=.3, random_state=SEED, stratify=y)
+X_train.extend(X_ae)
+y_train.extend([1] * len(X_ae))
 X_test.extend(X_new)
 y_test.extend([1] * len(X_new))
 print(len(X_train), len(X_test))
@@ -40,7 +44,7 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 X_new = scaler.transform(X_new)
-dump(scaler, "model/scaler.joblib")
+dump(scaler, "model/defensive/scaler.joblib")
 
 
 classifiers = {
@@ -56,7 +60,7 @@ hyperparam = [
     {"criterion": ["gini", "entropy"]},
     {"n_neighbors": [5, 100, 500], "weights": ["uniform", "distance"]},
     {"C": np.logspace(-3, 3, 7), "gamma": np.logspace(-3, 3, 7)},
-    {"criterion": ["gini", "entropy"], "n_estimators": [10, 100, 1000]},
+    {"criterion": ["gini", "entropy"], "max_features": ["auto", "sqrt", "log2"], "n_estimators": [5, 10, 20, 50, 100, 200]},
 ]
 
 for (name, est), hyper in zip(classifiers.items(), hyperparam):
@@ -68,7 +72,7 @@ for (name, est), hyper in zip(classifiers.items(), hyperparam):
     y_pred = clf.predict(X_test)
     y_pred_new = clf.predict(X_new)
 
-    dump(clf, f"model/{name}.joblib")
+    dump(clf, f"model/defensive/{name}.joblib")
 
     with open(REPORT_PATH, 'a') as f:
         clf_rp = metrics.classification_report(y_test, y_pred, digits=4)
